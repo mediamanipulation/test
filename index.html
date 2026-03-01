@@ -1,0 +1,1265 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus Tarot — DSPy Training Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; margin: 0; background: #020617; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes pulse-slow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    .pulse-slow { animation: pulse-slow 3s ease-in-out infinite; }
+    /* Mobile responsive */
+    @media (max-width: 640px) {
+      .hide-mobile { display: none !important; }
+      pre { font-size: 12px !important; padding: 12px !important; }
+      code { font-size: 11px !important; }
+    }
+    /* Horizontal scroll tab bar on mobile */
+    .tab-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tab-scroll::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ─── Design System ──────────────────────────────────────────────────
+
+function Badge({ children, variant = "default" }) {
+  const styles = {
+    default: "bg-amber-400/15 text-amber-300 border border-amber-400/20",
+    blue: "bg-sky-400/15 text-sky-300 border border-sky-400/20",
+    green: "bg-emerald-400/15 text-emerald-300 border border-emerald-400/20",
+    purple: "bg-violet-400/15 text-violet-300 border border-violet-400/20",
+    red: "bg-rose-400/15 text-rose-300 border border-rose-400/20",
+    sky: "bg-sky-400/15 text-sky-300 border border-sky-400/20",
+    violet: "bg-violet-400/15 text-violet-300 border border-violet-400/20",
+    emerald: "bg-emerald-400/15 text-emerald-300 border border-emerald-400/20",
+    amber: "bg-amber-400/15 text-amber-300 border border-amber-400/20",
+    rose: "bg-rose-400/15 text-rose-300 border border-rose-400/20",
+    slate: "bg-white/10 text-white/50 border border-white/10",
+  };
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded text-xs font-mono tracking-wide ${styles[variant] || styles.default}`}>
+      {children}
+    </span>
+  );
+}
+
+function Code({ children }) {
+  return (
+    <code className="bg-white/5 border border-white/10 text-amber-300 px-1.5 py-0.5 rounded text-sm font-mono">
+      {children}
+    </code>
+  );
+}
+
+function CodeBlock({ children, title }) {
+  return (
+    <div className="rounded-lg overflow-hidden border border-white/10 my-5">
+      {title && (
+        <div className="bg-white/5 px-4 py-2 border-b border-white/10 flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-rose-400/60" />
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-400/60" />
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/60" />
+          </div>
+          <span className="text-xs text-white/40 font-mono ml-2">{title}</span>
+        </div>
+      )}
+      <pre className="bg-slate-950/80 p-4 overflow-x-auto text-sm leading-relaxed">
+        <code className="text-slate-300 font-mono">{children}</code>
+      </pre>
+    </div>
+  );
+}
+
+function Callout({ type = "info", title, children }) {
+  const config = {
+    info: { border: "border-sky-400/30", bg: "bg-sky-400/5", icon: "\u{1F4A1}", accent: "text-sky-300" },
+    warn: { border: "border-amber-400/30", bg: "bg-amber-400/5", icon: "\u26A0\uFE0F", accent: "text-amber-300" },
+    key: { border: "border-emerald-400/30", bg: "bg-emerald-400/5", icon: "\u{1F511}", accent: "text-emerald-300" },
+    danger: { border: "border-rose-400/30", bg: "bg-rose-400/5", icon: "\u{1F6AB}", accent: "text-rose-300" },
+  };
+  const c = config[type];
+  return (
+    <div className={`${c.bg} ${c.border} border rounded-lg p-4 my-5`}>
+      <div className={`font-semibold ${c.accent} mb-1 flex items-center gap-2 text-sm`}>
+        <span>{c.icon}</span> {title}
+      </div>
+      <div className="text-white/70 text-sm leading-relaxed">{children}</div>
+    </div>
+  );
+}
+
+function SectionHeading({ children, sub }) {
+  return (
+    <div className="mb-4 sm:mb-5 mt-6 sm:mt-8 first:mt-0">
+      <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">{children}</h2>
+      {sub && <p className="text-white/40 text-xs sm:text-sm mt-1">{sub}</p>}
+      <div className="h-px bg-gradient-to-r from-amber-400/40 to-transparent mt-3" />
+    </div>
+  );
+}
+
+// ─── Resource Links ─────────────────────────────────────────────────
+
+function ResourceLink({ icon, label, path, desc, color = "sky" }) {
+  const colors = {
+    sky: "border-sky-400/20 bg-sky-400/5 hover:border-sky-400/40 text-sky-300",
+    violet: "border-violet-400/20 bg-violet-400/5 hover:border-violet-400/40 text-violet-300",
+    emerald: "border-emerald-400/20 bg-emerald-400/5 hover:border-emerald-400/40 text-emerald-300",
+    amber: "border-amber-400/20 bg-amber-400/5 hover:border-amber-400/40 text-amber-300",
+    rose: "border-rose-400/20 bg-rose-400/5 hover:border-rose-400/40 text-rose-300",
+  };
+  return (
+    <div className={`border rounded-lg p-3 sm:p-4 transition-all cursor-pointer ${colors[color]}`}>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <span className="text-base sm:text-lg">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className={`font-semibold text-xs sm:text-sm ${colors[color].split(" ").pop()}`}>{label}</div>
+          <div className="text-white/40 text-[10px] sm:text-xs mt-0.5 truncate">{path}</div>
+        </div>
+        <svg className="w-4 h-4 text-white/20 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </div>
+      {desc && <p className="text-white/40 text-xs mt-2 leading-relaxed hidden sm:block">{desc}</p>}
+    </div>
+  );
+}
+
+// ─── File Tree ──────────────────────────────────────────────────────
+
+function FileTree({ files }) {
+  return (
+    <div className="bg-white/[0.02] border border-white/10 rounded-lg p-4 my-4 font-mono text-xs">
+      {files.map((f, i) => (
+        <div key={i} className="flex items-center gap-2 py-0.5">
+          <span className="text-white/20" style={{ paddingLeft: (f.depth || 0) * 16 }}>
+            {f.type === "dir" ? "\u{1F4C1}" : "\u{1F4C4}"}
+          </span>
+          <span className={f.highlight ? "text-amber-300" : f.new ? "text-emerald-300" : "text-white/50"}>
+            {f.name}
+          </span>
+          {f.badge && <Badge variant={f.badgeVariant || "slate"}>{f.badge}</Badge>}
+          {f.note && <span className="text-white/20 ml-auto">{f.note}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Concept Card ───────────────────────────────────────────────────
+
+function ConceptCard({ name, what, why, color = "sky" }) {
+  const colors = {
+    sky: "border-sky-400/20 bg-sky-400/[0.03]",
+    violet: "border-violet-400/20 bg-violet-400/[0.03]",
+    emerald: "border-emerald-400/20 bg-emerald-400/[0.03]",
+    amber: "border-amber-400/20 bg-amber-400/[0.03]",
+  };
+  const textColors = { sky: "text-sky-300", violet: "text-violet-300", emerald: "text-emerald-300", amber: "text-amber-300" };
+  return (
+    <div className={`border rounded-lg p-4 ${colors[color]} my-3`}>
+      <div className={`font-semibold text-sm ${textColors[color]} mb-2 font-mono`}>{name}</div>
+      <div className="space-y-2 text-xs text-white/60 leading-relaxed">
+        <div><span className="text-white/30 uppercase tracking-wider text-[10px] font-semibold">What </span>{what}</div>
+        <div><span className="text-white/30 uppercase tracking-wider text-[10px] font-semibold">Why </span>{why}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Pipeline Diagram ───────────────────────────────────────────────
+
+function AgentPipeline() {
+  const [active, setActive] = useState(null);
+  const agents = [
+    {
+      name: "QuestionAnalysisAgent", sig: "query, context \u2192 analysis",
+      color: "sky", desc: "Interprets the user's question, identifies themes and emotional context before any cards are drawn.",
+      fields: { in: ["query", "context"], out: ["analysis"] },
+    },
+    {
+      name: "CardAnalysisAgent", sig: "card_name, position, reversed, query, profile \u2192 analysis",
+      color: "violet", desc: "Interprets each drawn card individually: meaning, position context, reversal, and actionable insight. Runs once per card.",
+      fields: { in: ["card_name", "card_position", "reversed_flag", "query", "reader_profile"], out: ["analysis"] },
+      note: "\u00D7N cards",
+    },
+    {
+      name: "ReadingSynthesisAgent", sig: "query, card_analyses, profile \u2192 final_reading",
+      color: "amber", desc: "Weaves all individual card analyses into a cohesive narrative reading, addressing the original question.",
+      fields: { in: ["query", "card_analyses", "reader_profile"], out: ["final_reading"] },
+    },
+  ];
+  const cm = {
+    sky: { bg: "bg-sky-400/10", border: "border-sky-400/40", text: "text-sky-300", glow: "shadow-sky-400/20" },
+    violet: { bg: "bg-violet-400/10", border: "border-violet-400/40", text: "text-violet-300", glow: "shadow-violet-400/20" },
+    amber: { bg: "bg-amber-400/10", border: "border-amber-400/40", text: "text-amber-300", glow: "shadow-amber-400/20" },
+  };
+  return (
+    <div className="my-6">
+      <div className="flex flex-col gap-3">
+        {agents.map((a, i) => {
+          const c = cm[a.color];
+          const isActive = active === i;
+          return (
+            <div key={i}>
+              <div className={`${c.bg} ${c.border} border rounded-lg p-4 cursor-pointer transition-all duration-300 ${isActive ? `shadow-lg ${c.glow}` : "hover:shadow-md"}`}
+                onClick={() => setActive(isActive ? null : i)}>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${c.bg} ${c.border} border flex items-center justify-center font-mono font-bold ${c.text} text-xs sm:text-sm`}>
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-semibold ${c.text} text-xs sm:text-sm font-mono truncate`}>{a.name}</div>
+                    <div className="text-white/40 text-[10px] sm:text-xs font-mono mt-0.5 truncate">{a.sig}</div>
+                  </div>
+                  {a.note && <Badge variant={a.color}>{a.note}</Badge>}
+                  <svg className={`w-4 h-4 ${c.text} transition-transform duration-200 ${isActive ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </div>
+                {isActive && (
+                  <div className="mt-3 sm:mt-4 pt-3 border-t border-white/10">
+                    <p className="text-white/60 text-xs sm:text-sm mb-3">{a.desc}</p>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 text-xs">
+                      <div>
+                        <div className="text-white/30 uppercase tracking-wider mb-1.5 font-semibold">Input Fields</div>
+                        {a.fields.in.map((f, j) => (
+                          <div key={j} className="text-white/50 flex items-center gap-1.5 mb-1 font-mono"><span className="text-emerald-400">\u2192</span> {f}</div>
+                        ))}
+                      </div>
+                      <div>
+                        <div className="text-white/30 uppercase tracking-wider mb-1.5 font-semibold">Output Fields</div>
+                        {a.fields.out.map((f, j) => (
+                          <div key={j} className="text-white/50 flex items-center gap-1.5 mb-1 font-mono"><span className={c.text}>\u2190</span> {f}</div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {i < agents.length - 1 && (
+                <div className="flex justify-center py-1">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className="w-px h-3 bg-white/20" />
+                    <svg className="w-3 h-3 text-white/30" fill="currentColor" viewBox="0 0 12 12"><path d="M6 9L1 4h10L6 9z" /></svg>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Dependency Graph ───────────────────────────────────────────────
+
+function DependencyGraph() {
+  const levels = [
+    { label: "Level 0: Foundation", color: "sky", items: ["Python Env", "78-Card Deck", "LLM Config"] },
+    { label: "Level 1: DSPy Primitives", color: "violet", items: ["Spreads & Registry", "Signatures & Modules", "Multi-Field Signatures"] },
+    { label: "Level 2: Composition", color: "amber", items: ["3-Agent Pipeline", "Personality System", "CLI"] },
+    { label: "Level 3: Enrichment", color: "emerald", items: ["Astrology & Optional Fields", "Structured Output", "Reading History"] },
+    { label: "Level 4: Surface", color: "rose", items: ["Gradio Web UI", "50 Unit Tests"] },
+  ];
+  const cm = {
+    sky: "border-sky-400/20 bg-sky-400/5 text-sky-300",
+    violet: "border-violet-400/20 bg-violet-400/5 text-violet-300",
+    amber: "border-amber-400/20 bg-amber-400/5 text-amber-300",
+    emerald: "border-emerald-400/20 bg-emerald-400/5 text-emerald-300",
+    rose: "border-rose-400/20 bg-rose-400/5 text-rose-300",
+  };
+  return (
+    <div className="space-y-3 my-6">
+      {levels.map((lvl, i) => (
+        <div key={i}>
+          <div className="text-white/30 text-[10px] uppercase tracking-wider font-semibold mb-1.5 ml-1">{lvl.label}</div>
+          <div className="flex flex-wrap gap-2">
+            {lvl.items.map((item, j) => (
+              <div key={j} className={`border rounded-md px-3 py-1.5 text-xs font-mono ${cm[lvl.color]}`}>{item}</div>
+            ))}
+          </div>
+          {i < levels.length - 1 && (
+            <div className="flex justify-center py-1">
+              <div className="w-px h-3 bg-white/10" />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// LESSON DATA
+// ═════════════════════════════════════════════════════════════════════
+
+const LESSONS = [
+  {
+    id: "lesson-01", num: "01", title: "Foundation",
+    subtitle: "Deck, LLM & Your First Agent",
+    color: "sky", duration: "~1 hour",
+    desc: "Start from an empty directory and build three foundational modules: a 78-card tarot deck, a configurable LLM connection, and your first DSPy agent.",
+    builds: ["deck.py", "llm.py", "agents.py"],
+    concepts: ["dspy.Signature", "dspy.Module", "dspy.ChainOfThought", "dspy.settings.configure()"],
+    sections: ["The 78-Card Deck", "LLM Configuration", "Your First Agent"],
+  },
+  {
+    id: "lesson-02", num: "02", title: "Pipeline",
+    subtitle: "The Three-Agent Architecture",
+    color: "violet", duration: "~1 hour",
+    desc: "Apply the Signature-Module pattern two more times to create CardAnalysis and ReadingSynthesis agents, then wire all three into an orchestrator pipeline.",
+    builds: ["agents.py (extended)", "agent_reader.py"],
+    concepts: ["Multi-field Signatures", "Pipeline orchestration", "Data flow between Modules"],
+    sections: ["Card Analysis Agent", "Reading Synthesis Agent", "The Orchestrator"],
+  },
+  {
+    id: "lesson-03", num: "03", title: "Spreads & Personalities",
+    subtitle: "Registry Pattern & CLI",
+    color: "emerald", duration: "~1 hour",
+    desc: "Expand from 2 to 7 tarot spreads using the registry pattern, build a personality system with dataclass-driven configuration, and create a CLI.",
+    builds: ["deck.py (spreads)", "personality.py", "main.py"],
+    concepts: ["Registry pattern", "Dataclass config", "to_profile_prompt()", "argparse wiring"],
+    sections: ["7 Spreads & Registry", "Personality System", "CLI Interface"],
+  },
+  {
+    id: "lesson-04", num: "04", title: "Astrology & History",
+    subtitle: "Optional Fields & Persistence",
+    color: "amber", duration: "~1 hour",
+    desc: "Add astrological context via optional InputFields, return structured results with a ReadingResult dataclass, and persist reading history to JSON.",
+    builds: ["astrology.py", "history.py", "agent_reader.py (ReadingResult)"],
+    concepts: ["dspy.InputField(default=\"\")", "Structured output", "JSON persistence", "Pattern analysis"],
+    sections: ["Astrology Module", "Structured Output", "Reading History"],
+  },
+  {
+    id: "lesson-05", num: "05", title: "UI & Testing",
+    subtitle: "Gradio Interface & 50 Tests",
+    color: "rose", duration: "~1 hour",
+    desc: "Build a Gradio web interface as a thin wrapper over your registries, then write 50 unit tests that verify every module without requiring an LLM.",
+    builds: ["interface.py", "tests/ (5 files, 50 tests)"],
+    concepts: ["Gradio rapid UI", "Testability-first design", "Offline testing strategy"],
+    sections: ["Gradio Web UI", "Test Suite", "Verification"],
+  },
+];
+
+// ═════════════════════════════════════════════════════════════════════
+// LESSON TABS
+// ═════════════════════════════════════════════════════════════════════
+
+const LESSON_TABS = [
+  { id: "overview", label: "Overview", num: "01" },
+  { id: "walkthrough", label: "Walkthrough", num: "02" },
+  { id: "code", label: "Code Reference", num: "03" },
+  { id: "resources", label: "Resources", num: "04" },
+];
+
+// ─── Lesson 1 Content ───────────────────────────────────────────────
+
+function Lesson01Overview() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Start from zero. End with a working DSPy agent.">What You'll Build</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">
+        This lesson establishes the three foundation modules that everything else sits on top of. You'll model the 78-card tarot deck as pure data, configure DSPy to talk to an LLM, and build your first agent that analyzes questions using chain-of-thought reasoning.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        {[
+          { title: "deck.py", desc: "78 cards, shuffle, draw, parse. Pure data \u2014 no dependencies, fully testable.", badge: "Data Layer", color: "sky" },
+          { title: "llm.py", desc: "configure_llm() supporting OpenAI and Ollama via DSPy. Configure once, every agent inherits.", badge: "Config", color: "violet" },
+          { title: "agents.py", desc: "QuestionAnalysisSig + QuestionAnalysisAgent. Your first Signature \u2192 Module \u2192 ChainOfThought.", badge: "First Agent", color: "amber" },
+        ].map((item, i) => (
+          <div key={i} className="border border-white/10 rounded-lg p-4 bg-white/[0.02]">
+            <Badge variant={item.color}>{item.badge}</Badge>
+            <div className="text-white/90 font-semibold text-sm mb-1 mt-2 font-mono">{item.title}</div>
+            <p className="text-white/50 text-xs leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+      <SectionHeading sub="The four DSPy concepts you'll learn in this lesson">DSPy Concepts Introduced</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ConceptCard color="sky" name="dspy.settings.configure()" what="Global LLM configuration. Call once, every agent inherits it." why="Decouples model selection from agent logic. Switch from GPT-4o to Ollama in one line." />
+        <ConceptCard color="violet" name="dspy.Signature" what="Typed I/O contracts that replace prompt templates. Declare inputs and outputs with names and types." why="You declare what you want, DSPy figures out how to prompt for it. No prompt engineering." />
+        <ConceptCard color="emerald" name="dspy.Module" what="Composable agent building blocks. Wraps a Signature into a callable with forward()." why="Modules are the unit of composition. Pipelines are Modules calling Modules." />
+        <ConceptCard color="amber" name="dspy.ChainOfThought" what="Step-by-step reasoning wrapper. Adds a 'reasoning' field before the output." why="The model shows its work before answering. Better accuracy on complex questions." />
+      </div>
+      <SectionHeading sub="What your project looks like after Lesson 1">File Structure</SectionHeading>
+      <FileTree files={[
+        { name: "nexus_tarot/", type: "dir", depth: 0 },
+        { name: "__init__.py", depth: 1, badge: "new", badgeVariant: "green" },
+        { name: "deck.py", depth: 1, highlight: true, badge: "78 cards", badgeVariant: "sky", note: "Section A" },
+        { name: "llm.py", depth: 1, highlight: true, badge: "LLM config", badgeVariant: "violet", note: "Section B" },
+        { name: "agents.py", depth: 1, highlight: true, badge: "1st agent", badgeVariant: "amber", note: "Section C" },
+        { name: ".env", depth: 0, badge: "API key", badgeVariant: "red" },
+        { name: "requirements.txt", depth: 0 },
+      ]} />
+    </div>
+  );
+}
+
+function Lesson01Walkthrough() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Section A: ~20 min">The 78-Card Deck</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">Every tarot reading starts with a deck. Before AI agents, you need a reliable programmatic representation of all 78 cards \u2014 22 Major Arcana and 56 Minor Arcana (4 suits \u00D7 14 ranks).</p>
+      <Callout type="key" title="Design Principle">Build the domain layer first. Everything above it \u2014 agents, UI, persistence \u2014 sits on top of something testable and dependency-free.</Callout>
+      <CodeBlock title="nexus_tarot/deck.py \u2014 Constants">{`MAJOR_ARCANA = [
+    "The Fool", "The Magician", "The High Priestess",
+    "The Empress", "The Emperor", "The Hierophant",
+    "The Lovers", "The Chariot", "Strength",
+    "The Hermit", "Wheel of Fortune", "Justice",
+    "The Hanged Man", "Death", "Temperance",
+    "The Devil", "The Tower", "The Star",
+    "The Moon", "The Sun", "Judgement", "The World"
+]
+
+SUITS = ["Wands", "Cups", "Swords", "Pentacles"]
+RANKS = ["Ace", "2", "3", "4", "5", "6", "7", "8",
+         "9", "10", "Page", "Knight", "Queen", "King"]`}</CodeBlock>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">Then <Code>full_deck()</Code> combines them into 78 strings, <Code>draw(n)</Code> shuffles and returns n cards with reversal flags, and <Code>parse_card()</Code> splits <Code>"Queen of Cups (reversed)"</Code> back into structured fields.</p>
+
+      <SectionHeading sub="Section B: ~15 min">LLM Configuration</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">DSPy supports both global configuration and per-agent LM injection. You'll build <Code>configure_llm(provider)</Code> that returns a configured LM instance.</p>
+      <CodeBlock title="nexus_tarot/llm.py">{`import dspy
+from dotenv import load_dotenv
+
+def configure_llm(provider="openai"):
+    load_dotenv()
+    if provider == "openai":
+        lm = dspy.LM("openai/gpt-4o-mini")
+    else:
+        lm = dspy.LM("ollama_chat/llama3",
+                      api_base="http://localhost:11434")
+    dspy.configure(lm=lm)
+    return lm`}</CodeBlock>
+
+      <SectionHeading sub="Section C: ~25 min">Your First DSPy Agent</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">This is the core pattern you'll use for every agent: <strong className="text-white/90">Signature \u2192 Module \u2192 ChainOfThought</strong>.</p>
+      <CodeBlock title="nexus_tarot/agents.py \u2014 First Agent">{`import dspy
+
+class QuestionAnalysisSig(dspy.Signature):
+    query = dspy.InputField()
+    context = dspy.InputField(default="")
+    analysis = dspy.OutputField(
+        desc="Themes, emotions, and angles in the query"
+    )
+
+class QuestionAnalysisAgent(dspy.Module):
+    def __init__(self, lm=None):
+        super().__init__()
+        self.lm = lm
+        self.chain = dspy.ChainOfThought(QuestionAnalysisSig)
+
+    def forward(self, query, context=""):
+        with dspy.context(lm=self.lm):
+            return self.chain(
+                query=query, context=context
+            ).analysis`}</CodeBlock>
+      <Callout type="info" title="The Pattern">Every DSPy agent follows this same three-step pattern. In Lesson 2, you'll apply it twice more for CardAnalysis and ReadingSynthesis. The structure never changes \u2014 only the Signature fields do.</Callout>
+    </div>
+  );
+}
+
+function Lesson01Code() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Functions and classes built in this lesson">Code Reference</SectionHeading>
+      <div className="space-y-3">
+        {[
+          { name: "MAJOR_ARCANA", type: "list[str]", file: "deck.py", desc: "22 Major Arcana card names, The Fool through The World." },
+          { name: "SUITS", type: "list[str]", file: "deck.py", desc: "The four suits: Wands, Cups, Swords, Pentacles." },
+          { name: "RANKS", type: "list[str]", file: "deck.py", desc: "14 ranks per suit: Ace, 2\u201310, Page, Knight, Queen, King." },
+          { name: "full_deck()", type: "\u2192 list[str]", file: "deck.py", desc: "Returns all 78 card names. Major Arcana + '{Rank} of {Suit}' for each minor." },
+          { name: "draw(n)", type: "\u2192 list[tuple]", file: "deck.py", desc: "Shuffles, draws n cards. Returns (name, reversed_bool) tuples." },
+          { name: "parse_card(text)", type: "\u2192 dict", file: "deck.py", desc: "Parses 'Queen of Cups (reversed)' into {name, suit, rank, reversed} dict." },
+          { name: "configure_llm(provider)", type: "\u2192 dspy.LM", file: "llm.py", desc: "Configures DSPy with OpenAI or Ollama. Loads .env, calls dspy.configure(), returns LM." },
+          { name: "QuestionAnalysisSig", type: "dspy.Signature", file: "agents.py", desc: "I/O contract: query + context \u2192 analysis. First Signature in the system." },
+          { name: "QuestionAnalysisAgent", type: "dspy.Module", file: "agents.py", desc: "Wraps QuestionAnalysisSig in ChainOfThought. Accepts optional lm for per-agent model." },
+        ].map((item, i) => (
+          <div key={i} className="border border-white/8 rounded-lg p-4 bg-white/[0.02] hover:border-white/15 transition-all">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <code className="font-mono text-sm font-semibold text-white/90">{item.name}</code>
+              <span className="text-white/20 text-xs font-mono">{item.type}</span>
+              <Badge variant="slate">{item.file}</Badge>
+            </div>
+            <p className="text-white/60 text-xs leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Lesson01Resources() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="All formats for Lesson 1">Learning Resources</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <ResourceLink icon="\u{1F4D6}" label="Lesson README" path="training/lessons/lesson-01/README.md" desc="Full teaching content with step-by-step build instructions" color="sky" />
+        <ResourceLink icon="\u{1F3AC}" label="Video Script" path="training/scripts/video-01-foundation.md" desc="~12 min narrated walkthrough with slide cues" color="violet" />
+        <ResourceLink icon="\u{1F4D3}" label="Jupyter Notebook" path="training/notebooks/lesson-01-foundation.ipynb" desc="Interactive cells with exercises and verification" color="emerald" />
+        <ResourceLink icon="\u{1F4DD}" label="Walkthrough" path="training/walkthrough.md" desc="Single continuous document \u2014 Lesson 1 section" color="amber" />
+      </div>
+      <SectionHeading sub="Hands-on coding files">Starter & Solution</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ResourceLink icon="\u{1F527}" label="Starter Files" path="training/lessons/lesson-01/starter/" desc="Skeleton files with TODO comments \u2014 fill these in" color="sky" />
+        <ResourceLink icon="\u2705" label="Solution Files" path="training/lessons/lesson-01/solution/" desc="Completed reference code to check your work" color="emerald" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Lesson 2 Content ───────────────────────────────────────────────
+
+function Lesson02Overview() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="From one agent to a complete reading pipeline">What You'll Build</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">
+        In Lesson 1 you built one agent. Now you'll apply the same Signature\u2192Module\u2192ChainOfThought pattern twice more, then wire all three agents into an <strong className="text-white/90">orchestrator pipeline</strong> that performs a complete tarot reading end-to-end.
+      </p>
+      <Callout type="key" title="The Core Architecture">
+        The orchestrator is a <strong>plain Python class</strong>, not a DSPy Module. It controls data flow; each Module handles its own LLM interaction. This separation keeps the pipeline testable and composable.
+      </Callout>
+      <SectionHeading sub="Interactive \u2014 click each agent to expand">The Three-Agent Pipeline</SectionHeading>
+      <AgentPipeline />
+      <p className="text-white/50 text-xs italic mt-2 mb-6">Click each agent to see its input/output fields and description.</p>
+      <SectionHeading sub="New concepts in this lesson">What's New</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ConceptCard color="violet" name="Multi-Field Signatures" what="Signatures with 5+ typed InputFields. Each field becomes a named slot in the generated prompt." why="Real-world tasks need rich context. Named fields beat concatenated text \u2014 the LLM sees structure." />
+        <ConceptCard color="amber" name="Pipeline Orchestration" what="A plain class creating and calling DSPy Modules, chaining outputs forward through a sequence." why="The orchestrator knows the contracts, not the internals. You can swap agents without touching the pipeline." />
+      </div>
+    </div>
+  );
+}
+
+function Lesson02Walkthrough() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Section A: ~20 min">The Card Analysis Agent</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">
+        Your first Signature had 2 inputs. The Card Analysis agent needs <strong className="text-white/90">5 input fields</strong> \u2014 card name, position, reversal, query, and reader profile. DSPy Signatures scale naturally: just declare more fields.
+      </p>
+      <CodeBlock title="nexus_tarot/agents.py \u2014 CardAnalysis">{`class CardAnalysisSig(dspy.Signature):
+    card_name = dspy.InputField()
+    card_position = dspy.InputField()
+    reversed_flag = dspy.InputField()
+    query = dspy.InputField()
+    reader_profile = dspy.InputField()
+    analysis = dspy.OutputField(
+        desc="Card meaning within context + actionable note"
+    )
+
+class CardAnalysisAgent(dspy.Module):
+    def __init__(self, lm=None):
+        super().__init__()
+        self.lm = lm
+        self.chain = dspy.ChainOfThought(CardAnalysisSig)
+
+    def forward(self, card_name, card_position,
+                reversed_flag, query, reader_profile):
+        with dspy.context(lm=self.lm):
+            return self.chain(
+                card_name=card_name,
+                card_position=card_position,
+                reversed_flag=reversed_flag,
+                query=query,
+                reader_profile=reader_profile,
+            ).analysis`}</CodeBlock>
+      <Callout type="info" title="Same pattern, more fields">The structure is identical to QuestionAnalysisAgent. Only the Signature changes. This is the power of the pattern \u2014 you learn it once, apply it everywhere.</Callout>
+
+      <SectionHeading sub="Section B: ~15 min">The Reading Synthesis Agent</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">The third agent receives all individual card analyses and weaves them into a cohesive narrative.</p>
+      <CodeBlock title="nexus_tarot/agents.py \u2014 ReadingSynthesis">{`class ReadingSynthesisSig(dspy.Signature):
+    query = dspy.InputField()
+    card_analyses = dspy.InputField()
+    reader_profile = dspy.InputField()
+    final_reading = dspy.OutputField(
+        desc="Complete synthesized tarot reading"
+    )
+
+class ReadingSynthesisAgent(dspy.Module):
+    def __init__(self, lm=None):
+        super().__init__()
+        self.lm = lm
+        self.chain = dspy.ChainOfThought(ReadingSynthesisSig)
+
+    def forward(self, query, card_analyses, reader_profile):
+        with dspy.context(lm=self.lm):
+            return self.chain(
+                query=query,
+                card_analyses=card_analyses,
+                reader_profile=reader_profile,
+            ).final_reading`}</CodeBlock>
+
+      <SectionHeading sub="Section C: ~25 min">The Orchestrator</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">The orchestrator is a <strong className="text-white/90">plain Python class</strong> that creates all three agents and chains them together.</p>
+      <CodeBlock title="nexus_tarot/agent_reader.py">{`class AgentEnhancedTarotReader:
+    def __init__(self, lm=None):
+        self.question_agent = QuestionAnalysisAgent(lm)
+        self.card_agent = CardAnalysisAgent(lm)
+        self.synthesis_agent = ReadingSynthesisAgent(lm)
+
+    def read(self, query, spread_func, profile=""):
+        # Phase 1: Analyze the question
+        analysis = self.question_agent(query=query)
+
+        # Phase 2: Draw and interpret each card
+        cards = spread_func()
+        card_analyses = []
+        for card_name, position, reversed in cards:
+            result = self.card_agent(
+                card_name=card_name,
+                card_position=position,
+                reversed_flag=str(reversed),
+                query=query,
+                reader_profile=profile,
+            )
+            card_analyses.append(result)
+
+        # Phase 3: Synthesize into final reading
+        combined = "\\n\\n".join(card_analyses)
+        return self.synthesis_agent(
+            query=query,
+            card_analyses=combined,
+            reader_profile=profile,
+        )`}</CodeBlock>
+      <Callout type="key" title="Why plain Python, not a DSPy Module?">The orchestrator doesn't call the LLM directly \u2014 it coordinates Modules that do. Keeping it as a plain class means no DSPy dependency for the control flow, and it's trivially testable with mocked agents.</Callout>
+    </div>
+  );
+}
+
+function Lesson02Code() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Everything built in this lesson">Code Reference</SectionHeading>
+      <div className="space-y-3">
+        {[
+          { name: "CardAnalysisSig", type: "dspy.Signature", file: "agents.py", desc: "5 inputs (card_name, card_position, reversed_flag, query, reader_profile) \u2192 1 output (analysis). Multi-field Signature for per-card interpretation." },
+          { name: "CardAnalysisAgent", type: "dspy.Module", file: "agents.py", desc: "Wraps CardAnalysisSig in ChainOfThought. Runs once per drawn card. Returns analysis string." },
+          { name: "ReadingSynthesisSig", type: "dspy.Signature", file: "agents.py", desc: "3 inputs (query, card_analyses, reader_profile) \u2192 1 output (final_reading). Combines all card interpretations." },
+          { name: "ReadingSynthesisAgent", type: "dspy.Module", file: "agents.py", desc: "Wraps ReadingSynthesisSig in ChainOfThought. The final agent in the pipeline." },
+          { name: "AgentEnhancedTarotReader", type: "class", file: "agent_reader.py", desc: "Plain Python orchestrator. Creates all 3 agents, chains Question \u2192 Card(\u00D7N) \u2192 Synthesis. Not a DSPy Module." },
+          { name: ".read(query, spread_func, profile)", type: "\u2192 str", file: "agent_reader.py", desc: "Main entry point. Analyzes question, draws cards via spread function, interprets each, synthesizes into final reading." },
+        ].map((item, i) => (
+          <div key={i} className="border border-white/8 rounded-lg p-4 bg-white/[0.02] hover:border-white/15 transition-all">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <code className="font-mono text-sm font-semibold text-white/90">{item.name}</code>
+              <span className="text-white/20 text-xs font-mono">{item.type}</span>
+              <Badge variant="slate">{item.file}</Badge>
+            </div>
+            <p className="text-white/60 text-xs leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Lesson02Resources() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="All formats for Lesson 2">Learning Resources</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <ResourceLink icon="\u{1F4D6}" label="Lesson README" path="training/lessons/lesson-02/README.md" desc="Full teaching content with build instructions" color="violet" />
+        <ResourceLink icon="\u{1F3AC}" label="Video Script" path="training/scripts/video-02-pipeline.md" desc="~12 min narrated pipeline walkthrough" color="sky" />
+        <ResourceLink icon="\u{1F4D3}" label="Jupyter Notebook" path="training/notebooks/lesson-02-pipeline.ipynb" desc="Interactive pipeline exercises" color="emerald" />
+        <ResourceLink icon="\u{1F4DD}" label="Walkthrough" path="training/walkthrough.md" desc="Single document \u2014 Lesson 2 section" color="amber" />
+      </div>
+      <SectionHeading sub="Hands-on coding files">Starter & Solution</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ResourceLink icon="\u{1F527}" label="Starter Files" path="training/lessons/lesson-02/starter/" desc="Skeleton with TODOs for both agents and orchestrator" color="violet" />
+        <ResourceLink icon="\u2705" label="Solution Files" path="training/lessons/lesson-02/solution/" desc="Complete reference implementation" color="emerald" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Lesson 3-5 Content (Lighter but complete) ──────────────────────
+
+function GenericOverview({ lesson }) {
+  const colorMap = { "sky": "sky", "violet": "violet", "emerald": "emerald", "amber": "amber", "rose": "rose" };
+  return (
+    <div className="fade-in">
+      <SectionHeading sub={lesson.subtitle}>What You'll Build</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">{lesson.desc}</p>
+
+      <SectionHeading sub="Sections in this lesson">Lesson Structure</SectionHeading>
+      <div className="space-y-2 mb-6">
+        {lesson.sections.map((s, i) => (
+          <div key={i} className="flex items-center gap-3 bg-white/[0.02] border border-white/10 rounded-lg p-3">
+            <div className={`w-7 h-7 rounded-full bg-${lesson.color}-400/10 border border-${lesson.color}-400/30 flex items-center justify-center font-mono font-bold text-${lesson.color}-300 text-xs`}>
+              {String.fromCharCode(65 + i)}
+            </div>
+            <span className="text-white/70 text-sm">{s}</span>
+          </div>
+        ))}
+      </div>
+
+      <SectionHeading sub="Files created or modified">What You'll Build</SectionHeading>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {lesson.builds.map((f, i) => (
+          <div key={i} className="border border-white/10 rounded-md px-3 py-1.5 bg-white/[0.02]">
+            <code className="text-amber-300 text-sm font-mono">{f}</code>
+          </div>
+        ))}
+      </div>
+
+      <SectionHeading sub="Key ideas introduced">Concepts</SectionHeading>
+      <div className="flex flex-wrap gap-2">
+        {lesson.concepts.map((c, i) => (
+          <Badge key={i} variant={lesson.color}>{c}</Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GenericResources({ lesson }) {
+  const num = lesson.num;
+  const names = { "01": "foundation", "02": "pipeline", "03": "spreads-personalities", "04": "astrology-history", "05": "ui-testing" };
+  const vnames = { "01": "foundation", "02": "pipeline", "03": "spreads-personalities", "04": "astrology-history", "05": "ui-testing" };
+  return (
+    <div className="fade-in">
+      <SectionHeading sub={`All formats for Lesson ${num}`}>Learning Resources</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <ResourceLink icon="\u{1F4D6}" label="Lesson README" path={`training/lessons/lesson-${num}/README.md`} desc="Full teaching content with build instructions" color={lesson.color} />
+        <ResourceLink icon="\u{1F3AC}" label="Video Script" path={`training/scripts/video-${num}-${vnames[num]}.md`} desc="~12 min narrated walkthrough" color="violet" />
+        <ResourceLink icon="\u{1F4D3}" label="Jupyter Notebook" path={`training/notebooks/lesson-${num}-${names[num]}.ipynb`} desc="Interactive exercises with verification" color="emerald" />
+        <ResourceLink icon="\u{1F4DD}" label="Walkthrough" path="training/walkthrough.md" desc={`Single document \u2014 Lesson ${num} section`} color="amber" />
+      </div>
+      <SectionHeading sub="Hands-on coding files">Starter & Solution</SectionHeading>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ResourceLink icon="\u{1F527}" label="Starter Files" path={`training/lessons/lesson-${num}/starter/`} desc="Skeleton files with TODO comments" color={lesson.color} />
+        <ResourceLink icon="\u2705" label="Solution Files" path={`training/lessons/lesson-${num}/solution/`} desc="Completed reference code" color="emerald" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Lesson 3 Specific ──────────────────────────────────────────────
+
+function Lesson03Walkthrough() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Section A: ~15 min">The Registry Pattern \u2014 7 Spreads</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">A registry is a dict mapping string keys to callable factories. Adding a new spread = one function + one dict entry. Everything that reads from the registry gets it for free.</p>
+      <CodeBlock title="nexus_tarot/deck.py \u2014 Registry">{`def single_card_spread():
+    cards = draw(1)
+    return [(name, "Single Card", rev) for name, rev in cards]
+
+def three_card_spread():
+    cards = draw(3)
+    positions = ["Past/Influence", "Present/Situation", "Future/Outcome"]
+    return [(name, pos, rev) for (name, rev), pos
+            in zip(cards, positions)]
+
+# ... celtic_cross, horseshoe, relationship,
+#     year_ahead, decision_making ...
+
+SPREADS = {
+    "single_card": single_card_spread,
+    "three_card": three_card_spread,
+    "celtic_cross": celtic_cross_spread,
+    # ... all 7
+}`}</CodeBlock>
+      <Callout type="key" title="Why registries?">Registries decouple "what exists" from "who uses it." The pipeline, CLI, and web UI all read from <Code>SPREADS</Code> \u2014 none need to know the individual functions. Adding a spread is a zero-touch change for consumers.</Callout>
+
+      <SectionHeading sub="Section B: ~20 min">The Personality System</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">A <Code>PersonalityConfig</Code> dataclass with a <Code>to_profile_prompt()</Code> method that renders itself into prompt text. Four factory functions create distinct reader personas.</p>
+      <CodeBlock title="nexus_tarot/personality.py">{`@dataclass
+class PersonalityConfig:
+    name: str
+    style: str
+    tone: str
+    vocabulary: list[str]
+    signature_phrases: list[str]
+
+    def to_profile_prompt(self) -> str:
+        return f"""You are {self.name}. Style: {self.style}.
+Tone: {self.tone}. Use vocabulary like:
+{', '.join(self.vocabulary)}."""
+
+PERSONALITIES = {
+    "nexus": create_nexus_personality,
+    "traditional": create_traditional_personality,
+    "psychological": create_psychological_personality,
+    "quantum": create_quantum_personality,
+}`}</CodeBlock>
+
+      <SectionHeading sub="Section C: ~25 min">The CLI</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">A thin <Code>main.py</Code> wiring registries to argparse. Spread and personality choices are populated directly from the registry dicts.</p>
+      <CodeBlock title="main.py \u2014 argparse wiring">{`parser.add_argument("--spread",
+    choices=SPREADS.keys(), default="three_card")
+parser.add_argument("--personality",
+    choices=PERSONALITIES.keys(), default="nexus")`}</CodeBlock>
+      <Callout type="info" title="Zero-touch CLI updates">When you add a spread to <Code>SPREADS</Code>, the CLI automatically includes it in <Code>--spread</Code> choices. No CLI code changes needed.</Callout>
+    </div>
+  );
+}
+
+function Lesson03Code() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Everything built in Lesson 3">Code Reference</SectionHeading>
+      <div className="space-y-3">
+        {[
+          { name: "single_card_spread()", file: "deck.py", desc: "Draws 1 card. Returns [(name, 'Single Card', reversed)]." },
+          { name: "three_card_spread()", file: "deck.py", desc: "Draws 3 cards with Past/Present/Future positions." },
+          { name: "celtic_cross_spread()", file: "deck.py", desc: "Draws 10 cards with traditional Celtic Cross positions." },
+          { name: "SPREADS", type: "dict", file: "deck.py", desc: "Registry mapping string keys to spread factory functions. 7 entries." },
+          { name: "PersonalityConfig", type: "dataclass", file: "personality.py", desc: "name, style, tone, vocabulary, signature_phrases. Self-renders via to_profile_prompt()." },
+          { name: "to_profile_prompt()", file: "personality.py", desc: "Renders the PersonalityConfig into a prompt string. The pipeline passes this through InputFields." },
+          { name: "PERSONALITIES", type: "dict", file: "personality.py", desc: "Registry mapping string keys to factory functions. 4 entries: nexus, traditional, psychological, quantum." },
+          { name: "main.py", type: "CLI", file: "main.py", desc: "argparse CLI with --spread, --personality, --provider, --verbose. Wires registries to choices." },
+        ].map((item, i) => (
+          <div key={i} className="border border-white/8 rounded-lg p-4 bg-white/[0.02] hover:border-white/15 transition-all">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <code className="font-mono text-sm font-semibold text-white/90">{item.name}</code>
+              {item.type && <span className="text-white/20 text-xs font-mono">{item.type}</span>}
+              <Badge variant="slate">{item.file}</Badge>
+            </div>
+            <p className="text-white/60 text-xs leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Lesson 4 Specific ──────────────────────────────────────────────
+
+function Lesson04Walkthrough() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Section A: ~20 min">The Astrology Module</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">Golden Dawn correspondences map Major Arcana to zodiac signs, planets, and elements. The module provides <Code>format_birth_chart()</Code> and <Code>get_card_astrology()</Code> as optional context enrichment.</p>
+      <Callout type="key" title="Optional InputFields">
+        <Code>dspy.InputField(default="")</Code> lets you enrich existing Signatures without breaking callers. Code that doesn't provide astrology context still works exactly as before.
+      </Callout>
+      <CodeBlock title="nexus_tarot/astrology.py">{`ZODIAC_SIGNS = ["Aries", "Taurus", "Gemini", ...]
+
+CARD_CORRESPONDENCES = {
+    "The Fool": {"planet": "Uranus", "element": "Air"},
+    "The Magician": {"planet": "Mercury", "element": "Air"},
+    # ... all 22 Major Arcana
+}
+
+def format_birth_chart(sun=None, moon=None, rising=None):
+    """Format birth chart info for pipeline context."""
+    parts = []
+    if sun: parts.append(f"Sun in {sun}")
+    if moon: parts.append(f"Moon in {moon}")
+    if rising: parts.append(f"Rising {rising}")
+    return " | ".join(parts) if parts else ""`}</CodeBlock>
+
+      <SectionHeading sub="Section B: ~15 min">Structured Output</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">Replace raw string returns with a <Code>ReadingResult</Code> dataclass. <Code>__str__()</Code> preserves backward compatibility.</p>
+      <CodeBlock title="agent_reader.py \u2014 ReadingResult">{`@dataclass
+class ReadingResult:
+    query: str
+    spread_type: str
+    cards: list
+    card_analyses: list[str]
+    final_reading: str
+    personality: str = ""
+
+    def __str__(self):
+        return self.final_reading  # backward compat`}</CodeBlock>
+
+      <SectionHeading sub="Section C: ~25 min">Reading History</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">JSON persistence to <Code>~/.nexus/readings.json</Code> and Counter-based pattern analysis \u2014 the payoff of structured output.</p>
+      <Callout type="info" title="Why structured output matters">Because ReadingResult has named fields, persistence is trivial: <Code>dataclasses.asdict()</Code> + <Code>json.dump()</Code>. No parsing, no extraction, no fragile string manipulation.</Callout>
+    </div>
+  );
+}
+
+function Lesson04Code() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Everything built in Lesson 4">Code Reference</SectionHeading>
+      <div className="space-y-3">
+        {[
+          { name: "ZODIAC_SIGNS", type: "list[str]", file: "astrology.py", desc: "12 zodiac signs." },
+          { name: "SIGN_DATA", type: "dict", file: "astrology.py", desc: "Element, modality, ruling planet for each zodiac sign." },
+          { name: "CARD_CORRESPONDENCES", type: "dict", file: "astrology.py", desc: "Golden Dawn mappings: each Major Arcana \u2192 planet + element." },
+          { name: "format_birth_chart()", file: "astrology.py", desc: "Formats optional sun/moon/rising into context string. Returns '' if none provided." },
+          { name: "get_card_astrology(card)", file: "astrology.py", desc: "Returns astrological correspondence for a Major Arcana card." },
+          { name: "ReadingResult", type: "dataclass", file: "agent_reader.py", desc: "Structured output: query, spread_type, cards, analyses, final_reading, personality. __str__() returns final_reading." },
+          { name: "ReadingRecord", type: "dataclass", file: "history.py", desc: "Timestamped wrapper around ReadingResult for persistence." },
+          { name: "save_reading(result)", file: "history.py", desc: "Appends ReadingRecord to ~/.nexus/readings.json." },
+          { name: "load_history()", file: "history.py", desc: "Loads all ReadingRecords from JSON." },
+          { name: "analyze_patterns(history)", file: "history.py", desc: "Counter-based analysis: most frequent cards, spreads, themes." },
+        ].map((item, i) => (
+          <div key={i} className="border border-white/8 rounded-lg p-4 bg-white/[0.02] hover:border-white/15 transition-all">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <code className="font-mono text-sm font-semibold text-white/90">{item.name}</code>
+              {item.type && <span className="text-white/20 text-xs font-mono">{item.type}</span>}
+              <Badge variant="slate">{item.file}</Badge>
+            </div>
+            <p className="text-white/60 text-xs leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Lesson 5 Specific ──────────────────────────────────────────────
+
+function Lesson05Walkthrough() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Section A: ~20 min">Gradio Web UI</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">The web UI is a thin wrapper. Every dropdown's choices come from a registry. The function body is ~10 lines.</p>
+      <CodeBlock title="nexus_tarot/interface.py">{`import gradio as gr
+from nexus_tarot.deck import SPREADS
+from nexus_tarot.personality import PERSONALITIES
+from nexus_tarot.astrology import ZODIAC_SIGNS
+
+def run_tarot(question, spread, personality, ...):
+    reader = AgentEnhancedTarotReader(lm)
+    spread_func = SPREADS[spread]
+    profile = PERSONALITIES[personality]().to_profile_prompt()
+    result = reader.read(question, spread_func, profile)
+    return str(result)
+
+gr.Interface(
+    fn=run_tarot,
+    inputs=[
+        gr.Textbox(label="Your Question"),
+        gr.Dropdown(list(SPREADS.keys())),
+        gr.Dropdown(list(PERSONALITIES.keys())),
+    ],
+    outputs=gr.Textbox(label="Reading"),
+).launch()`}</CodeBlock>
+      <Callout type="key" title="The payoff of registries">If your backend is well-structured, building a UI is wiring, not coding. Every dropdown reads from a registry you already built.</Callout>
+
+      <SectionHeading sub="Section B: ~30 min">The Test Suite \u2014 50 Tests</SectionHeading>
+      <p className="text-white/70 text-sm leading-relaxed mb-4">50 unit tests across 5 files, all running offline without an LLM. The design choices from earlier lessons make this possible.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4">
+        {[
+          { file: "test_deck.py", count: 11, tests: "Card count, draw, parse, spread functions" },
+          { file: "test_personality.py", count: 12, tests: "Config fields, profile prompt, all 4 factories" },
+          { file: "test_agent_reader.py", count: 4, tests: "parse_card() helper function" },
+          { file: "test_astrology.py", count: 13, tests: "Zodiac data, correspondences, birth chart formatting" },
+          { file: "test_history.py", count: 10, tests: "Save/load, pattern analysis, file I/O" },
+        ].map((t, i) => (
+          <div key={i} className="border border-white/10 rounded-lg p-3 bg-white/[0.02]">
+            <div className="flex items-center justify-between mb-1">
+              <code className="text-rose-300 text-sm font-mono">{t.file}</code>
+              <Badge variant="rose">{t.count} tests</Badge>
+            </div>
+            <p className="text-white/50 text-xs">{t.tests}</p>
+          </div>
+        ))}
+      </div>
+      <Callout type="info" title="Testability-first design">
+        <Code>parse_card()</Code> lives in <Code>deck.py</Code>, not <Code>agent_reader.py</Code>, specifically so it can be tested without importing DSPy. Every module that doesn't <em>need</em> the LLM is testable <em>without</em> the LLM.
+      </Callout>
+    </div>
+  );
+}
+
+function Lesson05Code() {
+  return (
+    <div className="fade-in">
+      <SectionHeading sub="Everything built in Lesson 5">Code Reference</SectionHeading>
+      <div className="space-y-3">
+        {[
+          { name: "run_tarot()", file: "interface.py", desc: "Main Gradio handler. Wires question, spread, personality, and astrology inputs to the pipeline." },
+          { name: "gr.Interface(...)", file: "interface.py", desc: "Gradio UI definition. Dropdowns from registries, radio buttons for provider, checkboxes for features." },
+          { name: "test_deck.py", type: "11 tests", file: "tests/", desc: "full_deck() count, draw() behavior, parse_card() edge cases, all spread functions." },
+          { name: "test_personality.py", type: "12 tests", file: "tests/", desc: "PersonalityConfig fields, to_profile_prompt() output, all 4 factory functions." },
+          { name: "test_agent_reader.py", type: "4 tests", file: "tests/", desc: "parse_card() helper extracted to deck.py for LLM-free testing." },
+          { name: "test_astrology.py", type: "13 tests", file: "tests/", desc: "ZODIAC_SIGNS completeness, SIGN_DATA structure, CARD_CORRESPONDENCES, format_birth_chart()." },
+          { name: "test_history.py", type: "10 tests", file: "tests/", desc: "save_reading(), load_history(), analyze_patterns(), file I/O with temp directories." },
+        ].map((item, i) => (
+          <div key={i} className="border border-white/8 rounded-lg p-4 bg-white/[0.02] hover:border-white/15 transition-all">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <code className="font-mono text-sm font-semibold text-white/90">{item.name}</code>
+              {item.type && <span className="text-white/20 text-xs font-mono">{item.type}</span>}
+              <Badge variant="slate">{item.file}</Badge>
+            </div>
+            <p className="text-white/60 text-xs leading-relaxed">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// LESSON PAGE COMPONENT
+// ═════════════════════════════════════════════════════════════════════
+
+// Content registry
+const LESSON_CONTENT = {
+  "lesson-01": {
+    overview: Lesson01Overview,
+    walkthrough: Lesson01Walkthrough,
+    code: Lesson01Code,
+    resources: Lesson01Resources,
+  },
+  "lesson-02": {
+    overview: Lesson02Overview,
+    walkthrough: Lesson02Walkthrough,
+    code: Lesson02Code,
+    resources: Lesson02Resources,
+  },
+  "lesson-03": {
+    overview: (props) => <GenericOverview lesson={LESSONS[2]} />,
+    walkthrough: Lesson03Walkthrough,
+    code: Lesson03Code,
+    resources: (props) => <GenericResources lesson={LESSONS[2]} />,
+  },
+  "lesson-04": {
+    overview: (props) => <GenericOverview lesson={LESSONS[3]} />,
+    walkthrough: Lesson04Walkthrough,
+    code: Lesson04Code,
+    resources: (props) => <GenericResources lesson={LESSONS[3]} />,
+  },
+  "lesson-05": {
+    overview: (props) => <GenericOverview lesson={LESSONS[4]} />,
+    walkthrough: Lesson05Walkthrough,
+    code: Lesson05Code,
+    resources: (props) => <GenericResources lesson={LESSONS[4]} />,
+  },
+};
+
+function LessonPage({ lesson, onBack }) {
+  const [activeTab, setActiveTab] = useState("overview");
+  const content = LESSON_CONTENT[lesson.id];
+  const TabComponent = content[activeTab];
+  const cm = {
+    sky: { text: "text-sky-300", accent: "bg-sky-400", dot: "bg-sky-400" },
+    violet: { text: "text-violet-300", accent: "bg-violet-400", dot: "bg-violet-400" },
+    emerald: { text: "text-emerald-300", accent: "bg-emerald-400", dot: "bg-emerald-400" },
+    amber: { text: "text-amber-300", accent: "bg-amber-400", dot: "bg-amber-400" },
+    rose: { text: "text-rose-300", accent: "bg-rose-400", dot: "bg-rose-400" },
+  };
+  const c = cm[lesson.color];
+
+  return (
+    <div>
+      {/* Lesson Header */}
+      <div className="relative border-b border-white/10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 sm:py-6">
+          <button onClick={onBack} className="flex items-center gap-2 text-white/40 hover:text-white/70 text-sm mb-3 sm:mb-4 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            All Lessons
+          </button>
+          <div className="flex items-center gap-2 sm:gap-3 mb-2">
+            <div className={`w-2 h-2 rounded-full ${c.dot} pulse-slow`} />
+            <Badge variant={lesson.color}>Lesson {lesson.num}</Badge>
+            <span className="text-white/30 text-xs">{lesson.duration}</span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-1">{lesson.title}</h1>
+          <p className="text-white/40 text-sm">{lesson.subtitle}</p>
+        </div>
+      </div>
+
+      {/* Tab Bar */}
+      <div className="border-b border-white/10 sticky top-0 bg-slate-950/95 backdrop-blur-sm z-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 flex gap-0 tab-scroll">
+          {LESSON_TABS.map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`relative px-3 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-medium transition-colors duration-200 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0 ${activeTab === tab.id ? c.text : "text-white/40 hover:text-white/60"}`}>
+              <span className="font-mono text-[10px] sm:text-xs opacity-50">{tab.num}</span>
+              {tab.label}
+              {activeTab === tab.id && <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${c.accent}`} />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <TabComponent />
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// HUB HOME PAGE
+// ═════════════════════════════════════════════════════════════════════
+
+function HubHome({ onSelectLesson }) {
+  const cm = {
+    sky: "border-sky-400/20 bg-sky-400/[0.03] hover:border-sky-400/40 hover:shadow-sky-400/10",
+    violet: "border-violet-400/20 bg-violet-400/[0.03] hover:border-violet-400/40 hover:shadow-violet-400/10",
+    emerald: "border-emerald-400/20 bg-emerald-400/[0.03] hover:border-emerald-400/40 hover:shadow-emerald-400/10",
+    amber: "border-amber-400/20 bg-amber-400/[0.03] hover:border-amber-400/40 hover:shadow-amber-400/10",
+    rose: "border-rose-400/20 bg-rose-400/[0.03] hover:border-rose-400/40 hover:shadow-rose-400/10",
+  };
+  const dotColors = { sky: "bg-sky-400", violet: "bg-violet-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400" };
+  const textColors = { sky: "text-sky-300", violet: "text-violet-300", emerald: "text-emerald-300", amber: "text-amber-300", rose: "text-rose-300" };
+
+  return (
+    <div>
+      {/* Hero */}
+      <div className="relative border-b border-white/10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="flex items-center gap-1.5">
+              {["bg-sky-400", "bg-violet-400", "bg-emerald-400", "bg-amber-400", "bg-rose-400"].map((c, i) => (
+                <div key={i} className={`w-2 h-2 rounded-full ${c} pulse-slow`} style={{ animationDelay: `${i * 0.3}s` }} />
+              ))}
+            </div>
+            <Badge>DSPy Multi-Agent Training</Badge>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2 sm:mb-3" style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
+            Nexus <span className="text-amber-400">Tarot</span>
+          </h1>
+          <p className="text-white/50 text-sm max-w-lg leading-relaxed">
+            Build a complete multi-agent AI tarot reading system from scratch. 5 lessons, 4 reader personalities, 7 spreads, 50 tests. Each lesson links to video scripts, Jupyter notebooks, starter code, and solutions.
+          </p>
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 sm:flex sm:gap-6 gap-y-3 gap-x-4 mt-5 sm:mt-6 text-xs text-white/30">
+            {[
+              { label: "Lessons", value: "5" },
+              { label: "Total Time", value: "~5 hrs" },
+              { label: "Files Built", value: "12" },
+              { label: "Unit Tests", value: "50" },
+              { label: "DSPy Concepts", value: "6" },
+            ].map((s, i) => (
+              <div key={i}>
+                <div className="text-white/70 font-semibold text-base sm:text-lg font-mono">{s.value}</div>
+                <div className="uppercase tracking-wider text-[10px]">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Lesson Cards */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <SectionHeading sub="Click any lesson to explore its content, code, and resources">Course Lessons</SectionHeading>
+        <div className="space-y-3 mb-10">
+          {LESSONS.map((lesson, i) => (
+            <div key={lesson.id}
+              onClick={() => onSelectLesson(lesson)}
+              className={`border rounded-lg p-5 cursor-pointer transition-all duration-300 hover:shadow-lg ${cm[lesson.color]}`}>
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-mono font-bold ${textColors[lesson.color]} text-xs sm:text-sm flex-shrink-0`}>
+                  {lesson.num}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className={`font-semibold text-sm sm:text-base ${textColors[lesson.color]}`}>{lesson.title}</h3>
+                    <span className="text-white/20 text-xs hidden sm:inline">{lesson.duration}</span>
+                  </div>
+                  <p className="text-white/40 text-xs sm:text-sm mb-2">{lesson.subtitle}</p>
+                  <p className="text-white/50 text-xs leading-relaxed mb-3 hidden sm:block">{lesson.desc}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {lesson.builds.map((f, j) => (
+                      <span key={j} className="text-[10px] font-mono text-white/30 bg-white/5 px-1.5 py-0.5 rounded">{f}</span>
+                    ))}
+                  </div>
+                </div>
+                <svg className="w-5 h-5 text-white/20 flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Dependency Graph */}
+        <SectionHeading sub="Concepts build on each other in logical order">Progression Map</SectionHeading>
+        <DependencyGraph />
+
+        {/* DSPy Concepts */}
+        <SectionHeading sub="The six DSPy concepts taught across the course">DSPy Concept Progression</SectionHeading>
+        <div className="space-y-2 mb-8">
+          {[
+            { concept: "dspy.settings.configure()", lesson: "Lesson 1", color: "sky", desc: "Configure once, every agent inherits" },
+            { concept: "dspy.Signature", lesson: "Lesson 1", color: "sky", desc: "Typed I/O contracts" },
+            { concept: "dspy.Module", lesson: "Lesson 1", color: "sky", desc: "Composable agent building blocks" },
+            { concept: "dspy.ChainOfThought", lesson: "Lesson 1", color: "sky", desc: "Step-by-step reasoning" },
+            { concept: "Pipeline orchestration", lesson: "Lesson 2", color: "violet", desc: "Modules calling Modules" },
+            { concept: "dspy.InputField(default=\"\")", lesson: "Lesson 4", color: "amber", desc: "Optional context enrichment" },
+          ].map((c, i) => (
+            <div key={i} className="flex items-center gap-3 bg-white/[0.02] border border-white/8 rounded-lg p-3 hover:border-white/15 transition-all">
+              <span className="text-white/20 font-mono text-xs w-4">{i + 1}</span>
+              <code className={`font-mono text-sm ${c.color === "sky" ? "text-sky-300" : c.color === "violet" ? "text-violet-300" : "text-amber-300"}`}>{c.concept}</code>
+              <span className="text-white/30 text-xs ml-auto">{c.lesson}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Global Resources */}
+        <SectionHeading sub="Course-wide materials">Global Resources</SectionHeading>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ResourceLink icon="\u{1F4DC}" label="Full Walkthrough" path="training/walkthrough.md" desc="Single continuous document with all 5 lessons and complete code" color="amber" />
+          <ResourceLink icon="\u{1F3AF}" label="Syllabus" path="training/SYLLABUS.md" desc="Logical progression map with concept dependencies" color="violet" />
+          <ResourceLink icon="\u{1F4DA}" label="Training Overview" path="training/TRAINING.md" desc="Comprehensive course overview and deployment guide" color="sky" />
+          <ResourceLink icon="\u{1F9EA}" label="MIPROv2 Deep Dive" path="training/miprov2-guide.jsx" desc="Interactive guide to DSPy's Bayesian prompt optimizer" color="emerald" />
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-white/5 mt-8 sm:mt-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/20">
+          <span>Nexus Tarot \u2014 DSPy Multi-Agent Training Hub</span>
+          <span className="font-mono">5 lessons \u00B7 ~5 hours \u00B7 50 tests</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// APP ROOT
+// ═════════════════════════════════════════════════════════════════════
+
+function App() {
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  return (
+    <div className={`min-h-screen bg-slate-950 text-white transition-opacity duration-700 ${mounted ? "opacity-100" : "opacity-0"}`}>
+      {/* Background glow */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-400/[0.02] rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-sky-400/[0.02] rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-violet-400/[0.015] rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative">
+        {currentLesson ? (
+          <LessonPage
+            lesson={currentLesson}
+            onBack={() => { setCurrentLesson(null); window.scrollTo(0, 0); }}
+          />
+        ) : (
+          <HubHome onSelectLesson={(l) => { setCurrentLesson(l); window.scrollTo(0, 0); }} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
